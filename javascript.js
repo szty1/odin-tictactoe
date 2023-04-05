@@ -26,6 +26,16 @@ const gameboard = (() => {
   const rows = 3;
   const cols = 3;
   const board = [];
+  const LINES = [
+    [0,0, 0,1, 0,2],
+    [1,0, 1,1, 1,2],
+    [2,0, 2,1, 2,2],
+    [0,0, 1,0, 2,0],
+    [0,1, 1,1, 2,1],
+    [0,2, 1,2, 2,2],
+    [0,0, 1,1, 2,2],
+    [2,0, 1,1, 0,2]
+  ];
 
   for (let i = 0; i < rows; i++) {
     board[i] = [];
@@ -53,12 +63,23 @@ const gameboard = (() => {
     }
   }
 
+  const checkWinner = () => {
+    let match = null
+    LINES.forEach((line) => {
+      if (getCell(line[0], line[1]) === getCell(line[2], line[3]) && getCell(line[0], line[1]) === getCell(line[4], line[5]) && getCell(line[0], line[1]) != null) {
+        match = getCell(line[0], line[1]);
+      }
+    });
+    return match;
+  }
+
   return {
     board,
     getBoard,
     fillCell,
     getCell,
-    reset
+    reset,
+    checkWinner
   }
 
 })();
@@ -93,8 +114,13 @@ const gameController = (() => {
   }
 
   const checkWinner = () => {
-    console.log(round);
-    if (round >= 9) {
+    let winner = gameboard.checkWinner();
+    if (winner) {
+      displayController.displayResult(`The winner is ${winner.getName()}`);
+      winner.addWin();
+      displayController.updatePlayerStats(player1, player2);
+    }
+    if (round == 9) {
       displayController.displayResult(`It's a draw!`);
       displayController.updatePlayerStats(player1, player2);
     }
