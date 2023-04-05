@@ -1,9 +1,10 @@
 // Data structures
 
-const Player = (mark, id) => {
+const Player = (mark, name, id) => {
   let wins = 0;
   
   const getMark = () => mark;
+  const getName = () => name;
   const getId = () => id;
 
   const addWin = () => {
@@ -14,6 +15,7 @@ const Player = (mark, id) => {
 
   return {
     getMark,
+    getName,
     getId,
     addWin,
     getWins
@@ -34,11 +36,11 @@ const gameboard = (() => {
 
   const getBoard = () => board;
 
-  const addMark = (row, col, mark) => {
-    if (board[row][col] === null) board[row][col] = mark;
+  const fillCell = (row, col, player) => {
+    if (board[row][col] === null) board[row][col] = player;
   }
 
-  const getMark = (row, col) => {
+  const getCell = (row, col) => {
     return board[row][col];
   }
 
@@ -51,40 +53,38 @@ const gameboard = (() => {
     }
   }
 
-  const printIndexes = () => {
-    board.forEach((row, indexrow) => {
-      row.forEach((cell, indexcol) => {
-        console.log(indexrow, indexcol, cell);
-      })
-    })
-  }
-
   return {
     board,
     getBoard,
-    addMark,
-    getMark,
-    reset,
-    printIndexes
+    fillCell,
+    getCell,
+    reset
   }
 
 })();
 
 const gameController = (() => {
 
-  const player1 = Player('X', 1);
-  const player2 = Player('O', 2);
-  let currentPlayer = player1;
-  let round = 1;
+  const player1 = Player('X', 'Player1', 0);
+  const player2 = Player('O', 'Player2', 1);
+  let currentPlayer;
+  let round;
 
-  const resetGame = () => {
-    displayController.updatePlayerStats(player1.getWins, player2.getWins);
+  const initGame = () => {
+    currentPlayer = player1;
+    round = 0;
+    gameboard.reset();
+    displayController.updatePlayerStats(player1, player2);
+    displayController.updateBoard();
+    displayController.updatePlayerSelection(currentPlayer.getId());
   }
 
   const handleSelection = (position) => {
-    gameboard.addMark(position[0], position[1], currentPlayer.getMark());
+    gameboard.fillCell(position[0], position[1], currentPlayer);
+    round++;
     switchPlayer();
     displayController.updateBoard();
+    checkWinner();
   }
 
   const switchPlayer = () => {
@@ -93,14 +93,18 @@ const gameController = (() => {
   }
 
   const checkWinner = () => {
-
+    console.log(round);
+    if (round >= 9) {
+      displayController.displayResult(`It's a draw!`);
+      displayController.updatePlayerStats(player1, player2);
+    }
   }
 
   return {
     handleSelection,
     switchPlayer,
     checkWinner,
-    resetGame
+    initGame
   }
 
 })();
@@ -108,7 +112,10 @@ const gameController = (() => {
 const displayController = (() => {
 
   const buttons = document.querySelectorAll('.boardContainer>button');
-  const playerdivs= document.querySelectorAll('.player');
+  const playerdivs = document.querySelectorAll('.player');
+  const resultdiv = document.querySelector('.result');
+  const resultcaption = document.querySelector('.result p');
+  const newGameButton = document.querySelector('.result button');
   
   buttons.forEach((button) => {
     button.position = button.dataset.index.split(',');
@@ -117,30 +124,51 @@ const displayController = (() => {
     });
   });
 
+  newGameButton.addEventListener('click', (e) => {
+    resultdiv.classList.remove('visible');
+    gameController.initGame();
+  });
+
   const updateBoard = () => {
-    console.log('fsdsd');
     buttons.forEach((button) => {
-      button.innerHTML = gameboard.getMark(button.dataset.index.split(',')[0], button.dataset.index.split(',')[1]);
+      let player = gameboard.getCell(button.dataset.index.split(',')[0], button.dataset.index.split(',')[1]);
+      button.innerHTML = (player) ? player.getMark() : '';
     });
   };
 
-  const updatePlayerSelection = (id) => {
+  const updatePlayerSelection = (index) => {
     playerdivs.forEach((playerdiv) => {
-
+      playerdiv.classList.remove('currentplayer');
     });
+    playerdivs[index].classList.add('currentplayer');
   }
 
-  const updatePlayerStats = (player1Wins, player2Wins) => {
-    document.querySelector('div#player1 .score').innerText = `Score: ${player1Wins}`;
-    document.querySelector('div#player2 .score').innerText = `Score: ${player2Wins}`;
+  const updatePlayerStats = (player1, player2) => {
+    document.querySelector('div#player1 .mark').innerText = `${player1.getMark()}`;
+    document.querySelector('div#player2 .mark').innerText = `${player2.getMark()}`;
+    document.querySelector('div#player1 .name').innerText = `${player1.getName()}`;
+    document.querySelector('div#player2 .name').innerText = `${player2.getName()}`;
+    document.querySelector('div#player1 .score').innerText = `Score: ${player1.getWins()}`;
+    document.querySelector('div#player2 .score').innerText = `Score: ${player2.getWins()}`;
+  }
+
+  const displayResult = (resultstring) => {
+    resultcaption.innerText = resultstring;
+    resultdiv.classList.add('visible');
+    playerdivs.forEach((playerdiv) => {
+      playerdiv.classList.remove('currentplayer');
+    });
   }
 
   return {
     updatePlayerStats,
     updateBoard,
-    updatePlayerSelection
+    updatePlayerSelection,
+    displayResult
   }
 })();
+
+gameController.initGame();
 
 
 
