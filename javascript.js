@@ -7,6 +7,10 @@ const Player = (mark, name, id) => {
   const getName = () => name;
   const getId = () => id;
 
+  const setName = (newname) => {
+    name = newname;
+  }
+
   const addWin = () => {
     wins += 1;
   }
@@ -17,6 +21,7 @@ const Player = (mark, name, id) => {
     getMark,
     getName,
     getId,
+    setName,
     addWin,
     getWins
   };
@@ -128,9 +133,14 @@ const gameController = (() => {
     return (gameboard.checkRow(position[0]) || gameboard.checkColumn(position[1]) || gameboard.checkDiagonals());
   }
 
+  const setPlayerName = (player, newname) => {
+    player.setName(newname);
+  }
+
   return {
     handleSelection,
-    initGame
+    initGame,
+    setPlayerName
   }
 
 })();
