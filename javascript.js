@@ -26,16 +26,6 @@ const gameboard = (() => {
   const rows = 3;
   const cols = 3;
   const board = [];
-  const LINES = [
-    [0,0, 0,1, 0,2],
-    [1,0, 1,1, 1,2],
-    [2,0, 2,1, 2,2],
-    [0,0, 1,0, 2,0],
-    [0,1, 1,1, 2,1],
-    [0,2, 1,2, 2,2],
-    [0,0, 1,1, 2,2],
-    [2,0, 1,1, 0,2]
-  ];
 
   for (let i = 0; i < rows; i++) {
     board[i] = [];
@@ -63,14 +53,17 @@ const gameboard = (() => {
     }
   }
 
-  const checkWinner = () => {
-    let match = null
-    LINES.forEach((line) => {
-      if (getCell(line[0], line[1]) === getCell(line[2], line[3]) && getCell(line[0], line[1]) === getCell(line[4], line[5]) && getCell(line[0], line[1]) != null) {
-        match = getCell(line[0], line[1]);
-      }
-    });
-    return match;
+  const checkRow = (row) => {
+    return (board[row][0] === board[row][1] && board[row][0] === board[row][2] && board[row][0] != null)
+  }
+
+  const checkColumn = (col) => {
+    return (board[0][col] === board[1][col] && board[0][col] === board[2][col] && board[0][col] != null)
+  }
+
+  const checkDiagonals = () => {
+    if (board[1][1] === null) return false;
+    return ((board[0][0] === board[1][1] && board[0][0] === board[2][2]) || (board[0][2] === board[1][1] && board[0][2] === board[2][0]))
   }
 
   return {
@@ -79,7 +72,9 @@ const gameboard = (() => {
     fillCell,
     getCell,
     reset,
-    checkWinner
+    checkRow,
+    checkColumn,
+    checkDiagonals
   }
 
 })();
@@ -90,8 +85,10 @@ const gameController = (() => {
   const player2 = Player('O', 'Player2', 1);
   let currentPlayer;
   let round;
+  let gameOver;
 
   const initGame = () => {
+    gameOver = false;
     currentPlayer = player1;
     round = 0;
     gameboard.reset();
@@ -101,11 +98,25 @@ const gameController = (() => {
   }
 
   const handleSelection = (position) => {
-    gameboard.fillCell(position[0], position[1], currentPlayer);
-    round++;
-    switchPlayer();
-    displayController.updateBoard();
-    checkWinner();
+    if (gameOver) return;
+    if (!gameboard.getCell(position[0], position[1])) {
+      gameboard.fillCell(position[0], position[1], currentPlayer);
+      displayController.updateBoard();
+      if (checkWinner(position)) {
+        displayController.displayResult(`The winner is ${currentPlayer.getName()}`);
+        currentPlayer.addWin();
+        displayController.updatePlayerStats(player1, player2);
+        gameOver = true;
+      } else if (round == 8) {
+        displayController.displayResult(`It's a draw!`);
+        displayController.updatePlayerStats(player1, player2);
+        gameOver = true;
+      } else {
+        round++;
+        switchPlayer();
+        checkWinner(position);
+      }   
+    }
   }
 
   const switchPlayer = () => {
@@ -113,23 +124,12 @@ const gameController = (() => {
     displayController.updatePlayerSelection(currentPlayer.getId());
   }
 
-  const checkWinner = () => {
-    let winner = gameboard.checkWinner();
-    if (winner) {
-      displayController.displayResult(`The winner is ${winner.getName()}`);
-      winner.addWin();
-      displayController.updatePlayerStats(player1, player2);
-    }
-    if (round == 9) {
-      displayController.displayResult(`It's a draw!`);
-      displayController.updatePlayerStats(player1, player2);
-    }
+  const checkWinner = (position) => {
+    return (gameboard.checkRow(position[0]) || gameboard.checkColumn(position[1]) || gameboard.checkDiagonals());
   }
 
   return {
     handleSelection,
-    switchPlayer,
-    checkWinner,
     initGame
   }
 
